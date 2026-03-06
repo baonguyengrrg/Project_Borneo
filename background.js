@@ -20,6 +20,7 @@ async function callGeminiAPI(text) {
       "meaning": "Dịch ý thật sự một cách thẳng thắn",
       "nuance": "Sắc thái (ví dụ: trực tiếp, nhiệt tình, từ chối khéo...)",
       "agree_percent": <Chỉ nhập 1 số nguyên từ 0 đến 100 thể hiện mức độ đồng tình>
+      "keywords": ["từ_khóa_1", "từ_khóa_2"] // Trích xuất 1 đến 3 từ tiếng Anh trong câu gốc thể hiện rõ nhất thái độ của người nói
     }
   `;
 

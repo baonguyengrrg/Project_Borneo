@@ -157,7 +157,7 @@ function processTranscript(speaker, textToAnalyze) {
   });
 }
 
-// 5. Render Kết quả lên UI
+// 5. Render Kết quả lên UI (Bản nâng cấp có Highlight)
 function renderResult(speaker, originalText, aiData) {
   const contentDiv = document.getElementById('nuance-content');
   let data = {};
@@ -172,13 +172,32 @@ function renderResult(speaker, originalText, aiData) {
   const nuance = data.nuance || "Giao tiếp bình thường";
   const agree = data.agree_percent !== undefined ? data.agree_percent : 50;
   const hesitate = data.hesitate_percent !== undefined ? data.hesitate_percent : 50;
+  
+  // Lấy danh sách từ khóa AI trả về (nếu không có thì để mảng rỗng)
+  const keywords = data.keywords || [];
+
+  // Logic Highlight: Tìm và bôi vàng từ khóa trong câu gốc
+  let highlightedText = originalText;
+  if (keywords.length > 0) {
+      keywords.forEach(keyword => {
+          if (keyword.length > 1) { // Bỏ qua mấy từ 1 chữ cái lặt vặt
+              try {
+                  // Dùng Regex quét không phân biệt hoa thường (gi), chỉ bắt nguyên từ (\\b)
+                  const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
+                  highlightedText = highlightedText.replace(regex, '<span style="color: #fbbc04; font-weight: bold; background-color: rgba(251, 188, 4, 0.15); padding: 0 3px; border-radius: 3px;">$1</span>');
+              } catch(e) {
+                  console.error("Lỗi regex highlight:", e);
+              }
+          }
+      });
+  }
 
   const html = `
     <div class="nuance-item" style="border-bottom: 1px solid #5f6368; padding-bottom: 12px; margin-bottom: 12px;">
       <div style="color: #e8eaed; font-weight: bold; margin-bottom: 4px;">👤 ${speaker}</div>
-      <div style="color: #9aa0a6; font-size: 13px; margin-bottom: 8px; font-style: italic;">"${originalText}"</div>
+      <div style="color: #9aa0a6; font-size: 13px; margin-bottom: 8px; font-style: italic;">"${highlightedText}"</div>
       <div style="margin-bottom: 4px;"><strong>Sắc thái:</strong> <span style="color: #fce8b2;">${nuance}</span></div>
-      <div><strong>Dịch ý thật:</strong> <span style="color: #81c995;">${meaning}</span></div>
+      <div><strong>Dịch ý:</strong> <span style="color: #81c995;">${meaning}</span></div>
       <div style="margin-top: 10px;">
         <span class="nuance-badge" style="background-color: #1e8e3e; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-right: 5px;">Đồng ý: ${agree}%</span>
         <span class="nuance-badge" style="background-color: #f29900; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #202124;">Băn khoăn: ${hesitate}%</span>
@@ -186,5 +205,6 @@ function renderResult(speaker, originalText, aiData) {
     </div>
   `;
   
+  // Chèn kết quả mới lên đầu danh sách
   contentDiv.innerHTML = html + contentDiv.innerHTML;
 }
