@@ -1,15 +1,23 @@
 {
   "manifest_version": 3,
-  "name": "Namer",
+  "name": "ASEAN Nuance Decoder (Hackathon)",
   "version": "1.0",
-  "description": "Description",
+  "description": "Real-time cultural nuance translation for Google Meet.",
   "permissions": [
-    "contextMenus"
+    "storage"
+  ],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*",
+    "https://meet.google.com/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
-  "action": {
-    "default_popup": "popup.html"
-  }
+  "content_scripts": [
+    {
+      "matches": ["https://meet.google.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ]
 }

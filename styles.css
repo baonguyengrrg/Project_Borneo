@@ -1,0 +1,59 @@
+#nuance-dashboard {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 320px;
+  background-color: rgba(32, 33, 36, 0.95);
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  z-index: 999999; /* Đảm bảo luôn nằm trên cùng */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  border: 1px solid #5f6368;
+  display: flex;
+  flex-direction: column;
+}
+
+#nuance-header {
+  padding: 12px;
+  background-color: #3c4043;
+  border-radius: 12px 12px 0 0;
+  cursor: grab;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#nuance-header:active {
+  cursor: grabbing;
+}
+
+#nuance-content {
+  padding: 15px;
+  font-size: 14px;
+  line-height: 1.5;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.nuance-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-top: 5px;
+  margin-right: 5px;
+}
+
+.badge-agree { background-color: #1e8e3e; }
+.badge-hesitate { background-color: #f29900; }
+
+.nuance-item {
+  border-bottom: 1px solid #5f6368;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+.nuance-item:last-child {
+  border-bottom: none;
+}

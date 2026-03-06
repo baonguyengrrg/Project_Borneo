@@ -1,46 +1,31 @@
-const GEMINI_API_KEY = "#tự điền api key"; 
+const GEMINI_API_KEY = "AIzaSyBVSiS9wmua7u74Zw_AYw7g5ajvxJt9QQI"; 
 
-// 1. Tạo Context Menu khi cài extension
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "decode-nuance",
-    title: "Decode Cultural Nuance",
-    contexts: ["selection"] // Chỉ hiện khi bôi đen text
-  });
-});
-
-// 2. Bắt sự kiện khi click chuột phải vào menu
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === "decode-nuance") {
-    const selectedText = info.selectionText;
-    console.log("Đã bắt được text:", selectedText);
-
-    // Gọi hàm fetch API
-    const aiResult = await callGeminiAPI(selectedText);
-    
-    // Bắn data sang giao diện (Popup/Side Panel) để Nhân render CSS
-    chrome.runtime.sendMessage({
-        action: "SHOW_RESULT",
-        data: aiResult
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "ANALYZE_TEXT") {
+    callGeminiAPI(request.text).then(result => {
+      sendResponse({ data: result });
     });
+    return true; // Bắt buộc phải có để giữ kết nối async
   }
 });
 
-// 3. Hàm gọi Gemini API bằng fetch
 async function callGeminiAPI(text) {
-  // Dùng model flash cho tốc độ nhanh nhất cho hackathon
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-  // Ép AI trả về JSON chuẩn để dễ bóc tách data lên UI
+  // Prompt được thiết kế sát với ý tưởng của bạn
   const systemPrompt = `
-    Phân tích sắc thái văn hóa của câu nói sau trong môi trường làm việc đa quốc gia. 
-    Trả về ĐÚNG định dạng JSON như sau, không giải thích lằng nhằng:
+    Phân tích sắc thái giao tiếp của câu nói sau trong cuộc họp làm việc đa quốc gia. 
+    Người nói có thể đang nói vòng vo, lịch sự hoặc ẩn ý.
+    
+    Chỉ trả về ĐÚNG định dạng JSON như sau, không chứa markdown, không giải thích gì thêm:
     {
-      "meaning": "Ý nghĩa đen",
-      "nuance": "Sắc thái thật sự bị ẩn giấu",
-      "advice": "Lời khuyên cách phản hồi"
+      "meaning": "Dịch ý thật sự người đó muốn nói một cách thẳng thắn",
+      "nuance": "Sắc thái ẩn giấu (ví dụ: đang miễn cưỡng, đang bực, đang ba phải...)",
+      "agree_percent": "Chỉ ghi số từ 0 đến 100 thể hiện mức độ đồng ý",
+      "hesitate_percent": "Chỉ ghi số từ 0 đến 100 thể hiện mức độ băn khoăn/chần chừ"
     }
-    Câu nói: "${text}"
+    
+    Câu nói cần phân tích: "${text}"
   `;
 
   try {
@@ -48,19 +33,22 @@ async function callGeminiAPI(text) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: systemPrompt }] }]
+        contents: [{ parts: [{ text: systemPrompt }] }],
+        generationConfig: {
+            temperature: 0.2, // Để AI trả lời ổn định định dạng JSON
+        }
       })
     });
 
     const data = await response.json();
+    if (!data.candidates) return { error: "API limit or error" };
+
     const aiText = data.candidates[0].content.parts[0].text;
-    
-    // Trick xử lý chuỗi: Xóa markdown ```json...``` nếu Gemini lỡ sinh ra
     const cleanJson = aiText.replace(/```json|```/g, "").trim();
     return JSON.parse(cleanJson); 
 
   } catch (error) {
     console.error("Lỗi gọi Gemini:", error);
-    return { error: "Không kết nối được AI" };
+    return null;
   }
 }
