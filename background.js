@@ -1,4 +1,4 @@
-const GEMINI_API_KEY = "AIzaSyCjz87Xxd7Yi36bMlC4i8VAoATfCJq208U"; 
+const GEMINI_API_KEY = "AIzaSyA7dPjovrqPMvvYIXhOvzTXR549jCRQnOs"; 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "ANALYZE_TEXT") {
@@ -21,6 +21,7 @@ async function callGeminiAPI(text) {
       "nuance": "Sắc thái (ví dụ: trực tiếp, nhiệt tình, từ chối khéo...)",
       "agree_percent": <Chỉ nhập 1 số nguyên từ 0 đến 100 thể hiện mức độ đồng tình>
       "keywords": ["từ_khóa_1", "từ_khóa_2"] // Trích xuất 1 đến 3 từ tiếng Anh trong câu gốc thể hiện rõ nhất thái độ của người nói
+      "suggested_reply": "Viết hẳn 1 câu tiếng Anh (kèm dịch tiếng Việt) để người dùng nói lại ngay lập tức nhằm xử lý tình huống này một cách chuyên nghiệp nhất."
     }
   `;
 

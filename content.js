@@ -192,12 +192,22 @@ function renderResult(speaker, originalText, aiData) {
       });
   }
 
+  // Lấy câu thoại gợi ý từ AI
+  const suggestedReply = data.suggested_reply || "Lắng nghe thêm để đưa ra phản hồi phù hợp.";
+
   const html = `
     <div class="nuance-item" style="border-bottom: 1px solid #5f6368; padding-bottom: 12px; margin-bottom: 12px;">
       <div style="color: #e8eaed; font-weight: bold; margin-bottom: 4px;">👤 ${speaker}</div>
       <div style="color: #9aa0a6; font-size: 13px; margin-bottom: 8px; font-style: italic;">"${highlightedText}"</div>
+      
       <div style="margin-bottom: 4px;"><strong>Sắc thái:</strong> <span style="color: #fce8b2;">${nuance}</span></div>
-      <div><strong>Dịch ý:</strong> <span style="color: #81c995;">${meaning}</span></div>
+      <div style="margin-bottom: 8px;"><strong>Dịch ý:</strong> <span style="color: #81c995;">${meaning}</span></div>
+      
+      <div style="margin-top: 8px; padding: 10px; background-color: rgba(30, 142, 62, 0.15); border-left: 4px solid #81c995; border-radius: 4px;">
+        <span style="font-size: 11px; font-weight: bold; color: #81c995; text-transform: uppercase;">💬 Câu thoại gợi ý cho bạn:</span>
+        <div style="font-size: 13px; color: #ffffff; margin-top: 5px; line-height: 1.4;">${suggestedReply}</div>
+      </div>
+
       <div style="margin-top: 10px;">
         <span class="nuance-badge" style="background-color: #1e8e3e; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-right: 5px;">Đồng ý: ${agree}%</span>
         <span class="nuance-badge" style="background-color: #f29900; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #202124;">Băn khoăn: ${hesitate}%</span>
