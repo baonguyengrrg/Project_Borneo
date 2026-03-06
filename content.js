@@ -1,24 +1,56 @@
-// 1. Khởi tạo UI Dashboard
+// 1. Khởi tạo UI Dashboard (Bản hỗ trợ Kéo giãn Resize)
 const dashboard = document.createElement('div');
 dashboard.id = 'nuance-dashboard';
 dashboard.innerHTML = `
-  <div id="nuance-header" style="padding: 12px; background-color: #3c4043; border-radius: 12px 12px 0 0; cursor: grab; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+  <div id="nuance-header" style="padding: 12px; background-color: #3c4043; border-radius: 12px 12px 0 0; cursor: grab; font-weight: bold; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
     <span>🌐 Nuance Decoder</span>
-    <span style="font-size: 10px; color: #8ab4f8; font-weight: bold;">LIVE</span>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <span id="nuance-toggle-btn" style="cursor: pointer; font-size: 12px; background: #ea4335; padding: 3px 8px; border-radius: 4px;">Tạm Dừng</span>
+        <span style="font-size: 10px; color: #8ab4f8; font-weight: bold;">LIVE</span>
+    </div>
   </div>
-  <div id="nuance-status" style="padding: 10px 15px; border-bottom: 1px solid #5f6368; font-size: 13px; color: #9aa0a6; background-color: rgba(32, 33, 36, 0.95);">
-    <i>Đang chờ phụ đề... (Nhớ bật Caption)</i>
+  <div id="nuance-status" style="padding: 10px 15px; border-bottom: 1px solid #5f6368; font-size: 13px; color: #9aa0a6; background-color: rgba(32, 33, 36, 0.95); flex-shrink: 0;">
+    <i>Đang chờ phụ đề...</i>
   </div>
-  <div id="nuance-content" style="padding: 15px; font-size: 14px; line-height: 1.5; max-height: 350px; overflow-y: auto; background-color: rgba(32, 33, 36, 0.95); border-radius: 0 0 12px 12px;">
+  <div id="nuance-content" style="padding: 15px; font-size: 14px; line-height: 1.5; flex-grow: 1; overflow-y: auto; background-color: rgba(32, 33, 36, 0.95);">
   </div>
 `;
+
+// Thêm resize: both; overflow: hidden; và các giới hạn kích thước
 dashboard.style.cssText = `
-  position: fixed; top: 20px; right: 20px; width: 340px; color: #fff; 
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 999999; 
+  position: fixed; top: 20px; right: 20px; 
+  width: 340px; height: 450px; /* Kích thước mặc định lúc mới mở */
+  min-width: 250px; min-height: 200px; /* Chống người dùng kéo nhỏ quá mức làm nát UI */
+  color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 999999; 
   font-family: 'Segoe UI', Tahoma, sans-serif; border: 1px solid #5f6368; 
   display: flex; flex-direction: column; border-radius: 12px;
+  resize: both; overflow: hidden; /* ĐÂY LÀ CHÌA KHÓA ĐỂ BẬT TÍNH NĂNG RESIZE */
 `;
 document.body.appendChild(dashboard);
+
+// ==========================================
+// LOGIC NÚT TẮT / BẬT SIÊU NHANH
+// ==========================================
+let isPaused = false; 
+const toggleBtn = document.getElementById('nuance-toggle-btn');
+const contentArea = document.getElementById('nuance-content');
+const statusArea = document.getElementById('nuance-status');
+
+toggleBtn.addEventListener('click', () => {
+    isPaused = !isPaused; // Đảo trạng thái
+    
+    if (isPaused) {
+        toggleBtn.innerText = "Bật Lại";
+        toggleBtn.style.background = "#1e8e3e"; // Đổi màu xanh
+        contentArea.style.display = "none"; // Giấu kết quả đi cho gọn màn hình
+        statusArea.innerHTML = "<i>Đã tạm dừng phân tích... (Tiết kiệm Quota)</i>";
+    } else {
+        toggleBtn.innerText = "Tạm Dừng";
+        toggleBtn.style.background = "#ea4335"; // Đổi màu đỏ
+        contentArea.style.display = "block"; // Hiện lại kết quả
+        statusArea.innerHTML = "<i>Đang chờ phụ đề...</i>";
+    }
+});
 
 // 2. Logic Kéo thả
 const header = document.getElementById('nuance-header');
@@ -39,12 +71,14 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mouseup', () => isDragging = false);
 
 // 3. Logic Đọc Caption BÓC TÁCH NGƯỜI NÓI (Đã vá lỗi Infinite Loop)
+
 let lastSentToAI = "";
 let currentTextOnUI = ""; // Biến mới để kiểm soát giao diện
 let typingTimer;
 const DONE_TYPING_INTERVAL = 3000;
 
 const observer = new MutationObserver((mutations) => {
+    if (isPaused) return;
     // 🛑 BỘ LỌC CẦU CHÌ: Bỏ qua nếu DOM thay đổi bên trong Dashboard của mình
     let isOnlyDashboard = true;
     mutations.forEach(m => {

@@ -1,4 +1,4 @@
-const GEMINI_API_KEY = "AIzaSyD7OdoSwFjpD6p8JDDmqKx-Y_FlOFcN3to"; 
+const GEMINI_API_KEY = "AIzaSyCjz87Xxd7Yi36bMlC4i8VAoATfCJq208U"; 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "ANALYZE_TEXT") {
