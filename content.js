@@ -90,15 +90,35 @@ setTimeout(() => {
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 }, 5000);
 
-// 4. Gửi Background gọi AI
+// 4. Gửi Background gọi AI (Bản bọc thép chống kẹt)
 function processTranscript(speaker, textToAnalyze) {
   const statusEl = document.getElementById('nuance-status');
   statusEl.innerHTML = `<i style="color: #f29900;">Đang gửi AI phân tích câu của ${speaker}...</i>`;
 
   chrome.runtime.sendMessage({ action: "ANALYZE_TEXT", text: textToAnalyze }, (response) => {
     statusEl.innerHTML = `<i>Đang chờ phụ đề tiếp theo...</i>`; 
+    
+    // Bắt lỗi đứt kết nối Extension
+    if (chrome.runtime.lastError) {
+        renderResult(speaker, textToAnalyze, {
+            meaning: "❌ Mất kết nối Extension. Hãy F5 lại trang!",
+            nuance: chrome.runtime.lastError.message
+        });
+        return;
+    }
+
+    // Bắt lỗi từ API
     if (response && response.data) {
-        renderResult(speaker, textToAnalyze, response.data);
+        if (response.data.error) {
+            renderResult(speaker, textToAnalyze, {
+                meaning: "❌ " + response.data.error,
+                nuance: "Lỗi gọi API"
+            });
+        } else {
+            renderResult(speaker, textToAnalyze, response.data);
+        }
+    } else {
+        renderResult(speaker, textToAnalyze, { meaning: "❌ Lỗi không xác định", nuance: "Không nhận được data" });
     }
   });
 }

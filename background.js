@@ -1,31 +1,26 @@
-const GEMINI_API_KEY = "AIzaSyBVSiS9wmua7u74Zw_AYw7g5ajvxJt9QQI"; 
+const GEMINI_API_KEY = "AIzaSyD7OdoSwFjpD6p8JDDmqKx-Y_FlOFcN3to"; 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "ANALYZE_TEXT") {
     callGeminiAPI(request.text).then(result => {
       sendResponse({ data: result });
     });
-    return true; // Bắt buộc phải có để giữ kết nối async
+    return true; 
   }
 });
 
 async function callGeminiAPI(text) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-  // Prompt được thiết kế sát với ý tưởng của bạn
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  
+  // PROMPT MỚI: Chỉ yêu cầu AI trả về 1 số duy nhất (agree_percent)
   const systemPrompt = `
-    Phân tích sắc thái giao tiếp của câu nói sau trong cuộc họp làm việc đa quốc gia. 
-    Người nói có thể đang nói vòng vo, lịch sự hoặc ẩn ý.
-    
-    Chỉ trả về ĐÚNG định dạng JSON như sau, không chứa markdown, không giải thích gì thêm:
+    Phân tích ý nghĩa và sắc thái của câu nói sau trong môi trường công sở: "${text}"
+    TRẢ VỀ ĐÚNG JSON (Không giải thích thêm):
     {
-      "meaning": "Dịch ý thật sự người đó muốn nói một cách thẳng thắn",
-      "nuance": "Sắc thái ẩn giấu (ví dụ: đang miễn cưỡng, đang bực, đang ba phải...)",
-      "agree_percent": "Chỉ ghi số từ 0 đến 100 thể hiện mức độ đồng ý",
-      "hesitate_percent": "Chỉ ghi số từ 0 đến 100 thể hiện mức độ băn khoăn/chần chừ"
+      "meaning": "Dịch ý thật sự một cách thẳng thắn",
+      "nuance": "Sắc thái (ví dụ: trực tiếp, nhiệt tình, từ chối khéo...)",
+      "agree_percent": <Chỉ nhập 1 số nguyên từ 0 đến 100 thể hiện mức độ đồng tình>
     }
-    
-    Câu nói cần phân tích: "${text}"
   `;
 
   try {
@@ -34,21 +29,35 @@ async function callGeminiAPI(text) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: systemPrompt }] }],
-        generationConfig: {
-            temperature: 0.2, // Để AI trả lời ổn định định dạng JSON
-        }
+        generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
       })
     });
 
     const data = await response.json();
-    if (!data.candidates) return { error: "API limit or error" };
+    if (data.error) return { error: "API Lỗi: " + data.error.message };
+    if (!data.candidates) return { error: "AI không trả về kết quả." };
 
-    const aiText = data.candidates[0].content.parts[0].text;
-    const cleanJson = aiText.replace(/```json|```/g, "").trim();
-    return JSON.parse(cleanJson); 
+    let aiText = data.candidates[0].content.parts[0].text;
+    aiText = aiText.replace(/```json|```/g, "").trim(); 
+    
+    let result = JSON.parse(aiText);
+    
+    // 🛑 BỌC THÉP TOÁN HỌC TẠI ĐÂY:
+    // Tự động tính phần trăm Băn khoăn (hesitate) dựa trên Đồng ý (agree)
+    if (result.agree_percent !== undefined) {
+        // Đảm bảo agree_percent nằm trong khoảng 0 - 100
+        result.agree_percent = Math.max(0, Math.min(100, result.agree_percent));
+        // Tính hesitation
+        result.hesitate_percent = 100 - result.agree_percent;
+    } else {
+        // Nếu AI lú không trả về số, set mặc định 50-50
+        result.agree_percent = 50;
+        result.hesitate_percent = 50;
+    }
+
+    return result; 
 
   } catch (error) {
-    console.error("Lỗi gọi Gemini:", error);
-    return null;
+    return { error: "Lỗi mạng hoặc hệ thống: " + error.message };
   }
 }
