@@ -107,7 +107,7 @@ const observer = new MutationObserver((mutations) => {
         currentTextOnUI = latestSpeech; // Lưu lại để lần quét sau không bị lặp
         
         const statusEl = document.getElementById('nuance-status');
-        if (statusEl) statusEl.innerHTML = `<i style="color: #8ab4f8;">${speakerName} đang nói: "${latestSpeech}"...</i>`;
+        if (statusEl) statusEl.innerHTML = `🎙️ <span style="color: #8ab4f8;"><b>${speakerName}</b> đang nói: <i>"${latestSpeech.substring(0, 35)}..."</i></span>`;
 
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
@@ -124,97 +124,67 @@ setTimeout(() => {
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 }, 5000);
 
-// 4. Gửi Background gọi AI (Bản bọc thép chống kẹt)
-function processTranscript(speaker, textToAnalyze) {
-  const statusEl = document.getElementById('nuance-status');
-  statusEl.innerHTML = `<i style="color: #f29900;">Đang gửi AI phân tích câu của ${speaker}...</i>`;
+// ==========================================
+// 4. GỬI LÊN BACKGROUND & RENDER KẾT QUẢ (Bản Hoàn Hảo)
+// ==========================================
+function processTranscript(speaker, text) {
+    const statusEl = document.getElementById('nuance-status');
+    if (statusEl) statusEl.innerHTML = `🧠 <span style="color: #fbbc04;">Đang phân tích ý của <b>${speaker}</b>...</span>`;
+    chrome.runtime.sendMessage({ action: "ANALYZE_TEXT", text: text }, (response) => {
+        if (!response || !response.data) return;
+        
+        const contentDiv = document.getElementById('nuance-content');
 
-  chrome.runtime.sendMessage({ action: "ANALYZE_TEXT", text: textToAnalyze }, (response) => {
-    statusEl.innerHTML = `<i>Đang chờ phụ đề tiếp theo...</i>`; 
-    
-    // Bắt lỗi đứt kết nối Extension
-    if (chrome.runtime.lastError) {
-        renderResult(speaker, textToAnalyze, {
-            meaning: "❌ Mất kết nối Extension. Hãy F5 lại trang!",
-            nuance: chrome.runtime.lastError.message
-        });
-        return;
-    }
-
-    // Bắt lỗi từ API
-    if (response && response.data) {
+        // Bắt lỗi đỏ
         if (response.data.error) {
-            renderResult(speaker, textToAnalyze, {
-                meaning: "❌ " + response.data.error,
-                nuance: "Lỗi gọi API"
-            });
-        } else {
-            renderResult(speaker, textToAnalyze, response.data);
+            contentDiv.innerHTML = `<div style="color: #ea4335; margin-bottom: 10px;">❌ Lỗi: ${response.data.error}</div>` + contentDiv.innerHTML;
+            return;
         }
-    } else {
-        renderResult(speaker, textToAnalyze, { meaning: "❌ Lỗi không xác định", nuance: "Không nhận được data" });
-    }
-  });
-}
+        
+        let data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+        
+        // 1. Logic Highlight từ khóa (Màu vàng dạ quang)
+        let highlightedText = text;
+        if (data.keywords && data.keywords.length > 0) {
+            data.keywords.forEach(kw => {
+                if (kw.length > 1) { // Bỏ qua mấy chữ lặt vặt 1 ký tự
+                    try {
+                        const reg = new RegExp(`\\b(${kw})\\b`, 'gi');
+                        highlightedText = highlightedText.replace(reg, `<span style="color: #fbbc04; font-weight: bold; background: rgba(251,188,4,0.15); padding: 0 2px; border-radius: 2px;">$1</span>`);
+                    } catch(e) {}
+                }
+            });
+        }
 
-// 5. Render Kết quả lên UI (Bản nâng cấp có Highlight)
-function renderResult(speaker, originalText, aiData) {
-  const contentDiv = document.getElementById('nuance-content');
-  let data = {};
-  
-  try {
-      data = typeof aiData === 'string' ? JSON.parse(aiData) : aiData;
-  } catch(e) {
-      console.error("Lỗi parse JSON:", e); return;
-  }
+        // 2. Logic Ẩn/Hiện thanh phần trăm thông minh
+        let percentageHtml = "";
+        // Chỉ vẽ thanh phần trăm khi AI thực sự trả về một con số
+        if (data.agree_percent !== null && data.agree_percent !== undefined) {
+            percentageHtml = `
+                <div style="margin-top: 8px; display: flex; gap: 5px;">
+                    <span style="background: #1e8e3e; font-size: 11px; padding: 3px 6px; border-radius: 3px;">Đồng ý: ${data.agree_percent}%</span>
+                    <span style="background: #f29900; font-size: 11px; padding: 3px 6px; border-radius: 3px; color: #202124;">Băn khoăn: ${data.hesitate_percent}%</span>
+                </div>
+            `;
+        }
 
-  const meaning = data.meaning || "Đang xử lý/Không rõ ý";
-  const nuance = data.nuance || "Giao tiếp bình thường";
-  const agree = data.agree_percent !== undefined ? data.agree_percent : 50;
-  const hesitate = data.hesitate_percent !== undefined ? data.hesitate_percent : 50;
-  
-  // Lấy danh sách từ khóa AI trả về (nếu không có thì để mảng rỗng)
-  const keywords = data.keywords || [];
-
-  // Logic Highlight: Tìm và bôi vàng từ khóa trong câu gốc
-  let highlightedText = originalText;
-  if (keywords.length > 0) {
-      keywords.forEach(keyword => {
-          if (keyword.length > 1) { // Bỏ qua mấy từ 1 chữ cái lặt vặt
-              try {
-                  // Dùng Regex quét không phân biệt hoa thường (gi), chỉ bắt nguyên từ (\\b)
-                  const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
-                  highlightedText = highlightedText.replace(regex, '<span style="color: #fbbc04; font-weight: bold; background-color: rgba(251, 188, 4, 0.15); padding: 0 3px; border-radius: 3px;">$1</span>');
-              } catch(e) {
-                  console.error("Lỗi regex highlight:", e);
-              }
-          }
-      });
-  }
-
-  // Lấy câu thoại gợi ý từ AI
-  const suggestedReply = data.suggested_reply || "Lắng nghe thêm để đưa ra phản hồi phù hợp.";
-
-  const html = `
-    <div class="nuance-item" style="border-bottom: 1px solid #5f6368; padding-bottom: 12px; margin-bottom: 12px;">
-      <div style="color: #e8eaed; font-weight: bold; margin-bottom: 4px;">👤 ${speaker}</div>
-      <div style="color: #9aa0a6; font-size: 13px; margin-bottom: 8px; font-style: italic;">"${highlightedText}"</div>
-      
-      <div style="margin-bottom: 4px;"><strong>Sắc thái:</strong> <span style="color: #fce8b2;">${nuance}</span></div>
-      <div style="margin-bottom: 8px;"><strong>Dịch ý:</strong> <span style="color: #81c995;">${meaning}</span></div>
-      
-      <div style="margin-top: 8px; padding: 10px; background-color: rgba(30, 142, 62, 0.15); border-left: 4px solid #81c995; border-radius: 4px;">
-        <span style="font-size: 11px; font-weight: bold; color: #81c995; text-transform: uppercase;">💬 Câu thoại gợi ý cho bạn:</span>
-        <div style="font-size: 13px; color: #ffffff; margin-top: 5px; line-height: 1.4;">${suggestedReply}</div>
-      </div>
-
-      <div style="margin-top: 10px;">
-        <span class="nuance-badge" style="background-color: #1e8e3e; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-right: 5px;">Đồng ý: ${agree}%</span>
-        <span class="nuance-badge" style="background-color: #f29900; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #202124;">Băn khoăn: ${hesitate}%</span>
-      </div>
-    </div>
-  `;
-  
-  // Chèn kết quả mới lên đầu danh sách
-  contentDiv.innerHTML = html + contentDiv.innerHTML;
+        // 3. Gom HTML lại và in ra màn hình
+        const html = `
+            <div style="border-bottom: 1px solid #5f6368; padding-bottom: 10px; margin-bottom: 10px;">
+                <div style="font-weight: bold; color: #e8eaed;">👤 ${speaker}</div>
+                <div style="font-size: 13px; color: #9aa0a6; font-style: italic; margin-bottom: 5px;">"${highlightedText}"</div>
+                
+                <div style="margin-bottom: 3px;"><strong>Sắc thái:</strong> <span style="color: #fce8b2;">${data.nuance || "Bình thường"}</span></div>
+                <div><strong>Dịch ý:</strong> <span style="color: #81c995;">${data.meaning || ""}</span></div>
+                
+                <div style="margin-top: 8px; padding: 8px; background: rgba(30,142,62,0.15); border-left: 3px solid #81c995; border-radius: 4px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #81c995;">💬 GỢI Ý ĐÁP LẠI:</span>
+                    <div style="font-size: 13px; color: #fff; margin-top: 3px;">${data.suggested_reply || "Tiếp tục lắng nghe..."}</div>
+                </div>
+                
+                ${percentageHtml}
+            </div>
+        `;
+        contentDiv.innerHTML = html + contentDiv.innerHTML;
+    });
 }

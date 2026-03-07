@@ -12,16 +12,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function callGeminiAPI(text) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   
-  // PROMPT MỚI: Chỉ yêu cầu AI trả về 1 số duy nhất (agree_percent)
+  // PROMPT MỚI: Dặn AI khi nào cần chấm điểm, khi nào trả về null
   const systemPrompt = `
     Phân tích ý nghĩa và sắc thái của câu nói sau trong môi trường công sở: "${text}"
     TRẢ VỀ ĐÚNG JSON (Không giải thích thêm):
     {
       "meaning": "Dịch ý thật sự một cách thẳng thắn",
-      "nuance": "Sắc thái (ví dụ: trực tiếp, nhiệt tình, từ chối khéo...)",
-      "agree_percent": <Chỉ nhập 1 số nguyên từ 0 đến 100 thể hiện mức độ đồng tình>
-      "keywords": ["từ_khóa_1", "từ_khóa_2"] // Trích xuất 1 đến 3 từ tiếng Anh trong câu gốc thể hiện rõ nhất thái độ của người nói
-      "suggested_reply": "Viết hẳn 1 câu tiếng Anh (kèm dịch tiếng Việt) để người dùng nói lại ngay lập tức nhằm xử lý tình huống này một cách chuyên nghiệp nhất."
+      "nuance": "Sắc thái (ví dụ: trực tiếp, nhiệt tình, từ chối khéo, chào hỏi...)",
+      "agree_percent": <Chỉ nhập 1 số nguyên từ 0 đến 100 NẾU câu nói thể hiện sự đồng tình, phản đối, hoặc do dự. NẾU LÀ CÂU CHÀO HỎI, THÔNG BÁO HOẶC CÂU HỎI BÌNH THƯỜNG, HÃY TRẢ VỀ null>,
+      "keywords": [], // BẮT BUỘC: Lấy y nguyên 1 đến 3 từ TIẾNG ANH trong câu gốc ("${text}") thể hiện rõ nhất thái độ/sắc thái. TUYỆT ĐỐI KHÔNG DỊCH SANG TIẾNG VIỆT. Nếu không có từ nào đặc biệt thì để mảng rỗng [].
+      "suggested_reply": "Viết hẳn 1 câu tiếng Anh (kèm dịch tiếng Việt) để người dùng đáp lại."
     }
   `;
 
@@ -44,17 +44,14 @@ async function callGeminiAPI(text) {
     
     let result = JSON.parse(aiText);
     
-    // 🛑 BỌC THÉP TOÁN HỌC TẠI ĐÂY:
-    // Tự động tính phần trăm Băn khoăn (hesitate) dựa trên Đồng ý (agree)
-    if (result.agree_percent !== undefined) {
-        // Đảm bảo agree_percent nằm trong khoảng 0 - 100
+    // 🛑 LOGIC MỚI: Chỉ tính toán nếu AI thực sự trả về số
+    if (result.agree_percent !== null && result.agree_percent !== undefined) {
         result.agree_percent = Math.max(0, Math.min(100, result.agree_percent));
-        // Tính hesitation
         result.hesitate_percent = 100 - result.agree_percent;
     } else {
-        // Nếu AI lú không trả về số, set mặc định 50-50
-        result.agree_percent = 50;
-        result.hesitate_percent = 50;
+        // Xóa luôn thuộc tính này để giao diện biết đường ẩn đi
+        result.agree_percent = null;
+        result.hesitate_percent = null;
     }
 
     return result; 
