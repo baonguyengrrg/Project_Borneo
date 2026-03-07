@@ -107,7 +107,14 @@ const observer = new MutationObserver((mutations) => {
         currentTextOnUI = latestSpeech; // Lưu lại để lần quét sau không bị lặp
         
         const statusEl = document.getElementById('nuance-status');
-        if (statusEl) statusEl.innerHTML = `🎙️ <span style="color: #8ab4f8;"><b>${speakerName}</b> đang nói: <i>"${latestSpeech.substring(0, 35)}..."</i></span>`;
+        if (statusEl) {
+    // Thêm CSS để chữ tự động xuống dòng, không bị tràn ra khỏi bảng
+    statusEl.style.whiteSpace = "normal"; 
+    statusEl.style.lineHeight = "1.4";
+    
+    // Hiển thị toàn bộ nội dung (bỏ lệnh substring)
+    statusEl.innerHTML = `🎙️ <span style="color: #8ab4f8;"><b>${speakerName}</b> đang nói: <br><i style="color: #ffffff; font-size: 13px;">"${latestSpeech}"</i></span>`;
+}
 
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
