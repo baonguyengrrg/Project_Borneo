@@ -1,4 +1,5 @@
-const GEMINI_API_KEY = "AIzaSyCM1bkK2h1q0welbPuILyunJfxsbeGVMFE"; 
+equire('dotenv').config();
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "ANALYZE_TEXT") {
