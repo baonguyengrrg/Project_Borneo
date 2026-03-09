@@ -1,4 +1,4 @@
-// 1. Khởi tạo UI Dashboard (Bản hỗ trợ Kéo giãn Resize)
+// 1. Khởi tạo UI Dashboard
 const dashboard = document.createElement('div');
 dashboard.id = 'nuance-dashboard';
 dashboard.innerHTML = `
@@ -16,133 +16,115 @@ dashboard.innerHTML = `
   </div>
 `;
 
-// Thêm resize: both; overflow: hidden; và các giới hạn kích thước
 dashboard.style.cssText = `
   position: fixed; top: 20px; right: 20px; 
-  width: 340px; height: 450px; /* Kích thước mặc định lúc mới mở */
-  min-width: 250px; min-height: 200px; /* Chống người dùng kéo nhỏ quá mức làm nát UI */
+  width: 340px; height: 450px; 
+  min-width: 250px; min-height: 200px; 
   color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 999999; 
   font-family: 'Segoe UI', Tahoma, sans-serif; border: 1px solid #5f6368; 
   display: flex; flex-direction: column; border-radius: 12px;
-  resize: both; overflow: hidden; /* ĐÂY LÀ CHÌA KHÓA ĐỂ BẬT TÍNH NĂNG RESIZE */
+  resize: both; overflow: hidden; 
 `;
 document.body.appendChild(dashboard);
 
-// ==========================================
-// LOGIC NÚT TẮT / BẬT SIÊU NHANH
-// ==========================================
+// 2. Logic Nút Bật/Tắt & Kéo thả
 let isPaused = false; 
+let isCoolingDown = false; // Phanh bảo vệ API
 const toggleBtn = document.getElementById('nuance-toggle-btn');
 const contentArea = document.getElementById('nuance-content');
 const statusArea = document.getElementById('nuance-status');
 
 toggleBtn.addEventListener('click', () => {
-    isPaused = !isPaused; // Đảo trạng thái
-    
+    isPaused = !isPaused; 
     if (isPaused) {
         toggleBtn.innerText = "Bật Lại";
-        toggleBtn.style.background = "#1e8e3e"; // Đổi màu xanh
-        contentArea.style.display = "none"; // Giấu kết quả đi cho gọn màn hình
-        statusArea.innerHTML = "<i>Đã tạm dừng phân tích... (Tiết kiệm Quota)</i>";
+        toggleBtn.style.background = "#1e8e3e"; 
+        contentArea.style.display = "none"; 
+        statusArea.innerHTML = "<i>Đã tạm dừng phân tích...</i>";
     } else {
         toggleBtn.innerText = "Tạm Dừng";
-        toggleBtn.style.background = "#ea4335"; // Đổi màu đỏ
-        contentArea.style.display = "block"; // Hiện lại kết quả
+        toggleBtn.style.background = "#ea4335"; 
+        contentArea.style.display = "block"; 
         statusArea.innerHTML = "<i>Đang chờ phụ đề...</i>";
     }
 });
 
-// 2. Logic Kéo thả
 const header = document.getElementById('nuance-header');
 let isDragging = false, currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
-
-header.addEventListener('mousedown', (e) => {
-  initialX = e.clientX - xOffset; initialY = e.clientY - yOffset;
-  if (e.target === header) isDragging = true;
-});
-document.addEventListener('mousemove', (e) => {
-  if (isDragging) {
-    e.preventDefault();
-    currentX = e.clientX - initialX; currentY = e.clientY - initialY;
-    xOffset = currentX; yOffset = currentY;
-    dashboard.style.transform = `translate(${currentX}px, ${currentY}px)`;
-  }
-});
+header.addEventListener('mousedown', (e) => { initialX = e.clientX - xOffset; initialY = e.clientY - yOffset; if (e.target === header) isDragging = true; });
+document.addEventListener('mousemove', (e) => { if (isDragging) { e.preventDefault(); currentX = e.clientX - initialX; currentY = e.clientY - initialY; xOffset = currentX; yOffset = currentY; dashboard.style.transform = `translate(${currentX}px, ${currentY}px)`; } });
 document.addEventListener('mouseup', () => isDragging = false);
 
-// 3. Logic Đọc Caption BÓC TÁCH NGƯỜI NÓI (Đã vá lỗi Infinite Loop)
 
+// 3. Logic Đọc Caption Real-time
 let lastSentToAI = "";
-let currentTextOnUI = ""; // Biến mới để kiểm soát giao diện
+let currentTextOnUI = ""; 
 let typingTimer;
-const DONE_TYPING_INTERVAL = 3000;
+const DONE_TYPING_INTERVAL = 4000;
 
 const observer = new MutationObserver((mutations) => {
     if (isPaused) return;
-    // 🛑 BỘ LỌC CẦU CHÌ: Bỏ qua nếu DOM thay đổi bên trong Dashboard của mình
+    
     let isOnlyDashboard = true;
-    mutations.forEach(m => {
-        if (!dashboard.contains(m.target)) {
-            isOnlyDashboard = false;
-        }
-    });
-    if (isOnlyDashboard) return; // Ngắt mạch tại đây! Tránh đơ máy.
+    mutations.forEach(m => { if (!dashboard.contains(m.target)) isOnlyDashboard = false; });
+    if (isOnlyDashboard) return;
 
-    // Tìm TÊN người nói
     const speakerNodes = document.querySelectorAll('.adE6rb');
     if (speakerNodes.length === 0) return;
 
     const lastSpeakerNode = speakerNodes[speakerNodes.length - 1];
     const speakerName = lastSpeakerNode.innerText.trim();
-
-    // Tìm KHUNG CHAT chứa câu nói
     const parentBlock = lastSpeakerNode.parentElement;
     if(!parentBlock) return;
 
     const fullText = parentBlock.innerText.trim();
     let latestSpeech = fullText.substring(speakerName.length).replace(/\n/g, " ").replace(/\s+/g, ' ').trim();
 
-    // Chỉ cập nhật nếu CÂU NÓI CÓ SỰ THAY ĐỔI
     if (latestSpeech.length > 0 && latestSpeech !== currentTextOnUI) {
-        currentTextOnUI = latestSpeech; // Lưu lại để lần quét sau không bị lặp
+        currentTextOnUI = latestSpeech; 
         
         const statusEl = document.getElementById('nuance-status');
         if (statusEl) {
-    // Thêm CSS để chữ tự động xuống dòng, không bị tràn ra khỏi bảng
-    statusEl.style.whiteSpace = "normal"; 
-    statusEl.style.lineHeight = "1.4";
-    
-    // Hiển thị toàn bộ nội dung (bỏ lệnh substring)
-    statusEl.innerHTML = `🎙️ <span style="color: #8ab4f8;"><b>${speakerName}</b> đang nói: <br><i style="color: #ffffff; font-size: 13px;">"${latestSpeech}"</i></span>`;
-}
+            statusEl.style.whiteSpace = "normal"; 
+            statusEl.style.lineHeight = "1.4";
+            statusEl.innerHTML = `🎙️ <span style="color: #8ab4f8;"><b>${speakerName}</b> đang nói: <br><i style="color: #ffffff; font-size: 13px;">"${latestSpeech}"</i></span>`;
+        }
 
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
-            // Chốt câu gửi đi AI
             if (latestSpeech.length > 5 && latestSpeech !== lastSentToAI) {
+                // CHẶN GỬI NẾU ĐANG HỒI CHIÊU
+                if (isCoolingDown) {
+                    if (statusEl) statusEl.innerHTML = `⏳ <span style="color: #ea4335;">Nghỉ 15s tránh nghẽn API (Anti-Spam)...</span>`;
+                    return;
+                }
+
                 processTranscript(speakerName, latestSpeech);
                 lastSentToAI = latestSpeech;
+                
+                // Bật phanh 15s
+                isCoolingDown = true;
+                setTimeout(() => { isCoolingDown = false; }, 15000);
             }
         }, DONE_TYPING_INTERVAL);
     }
 });
 
-setTimeout(() => {
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-}, 5000);
+setTimeout(() => { observer.observe(document.body, { childList: true, subtree: true, characterData: true }); }, 5000);
 
-// ==========================================
-// 4. GỬI LÊN BACKGROUND & RENDER KẾT QUẢ (Bản Hoàn Hảo)
-// ==========================================
+
+// 4. Gửi Background & Render Kết Quả
 function processTranscript(speaker, text) {
     const statusEl = document.getElementById('nuance-status');
     if (statusEl) statusEl.innerHTML = `🧠 <span style="color: #fbbc04;">Đang phân tích ý của <b>${speaker}</b>...</span>`;
+    
     chrome.runtime.sendMessage({ action: "ANALYZE_TEXT", text: text }, (response) => {
+        // Reset trạng thái sau khi phân tích xong
+        if (statusEl && !isCoolingDown) statusEl.innerHTML = `✅ <span style="color: #81c995;">Xong! Đang chờ câu tiếp theo...</span>`;
+
         if (!response || !response.data) return;
-        
         const contentDiv = document.getElementById('nuance-content');
 
-        // Bắt lỗi đỏ
         if (response.data.error) {
             contentDiv.innerHTML = `<div style="color: #ea4335; margin-bottom: 10px;">❌ Lỗi: ${response.data.error}</div>` + contentDiv.innerHTML;
             return;
@@ -150,11 +132,10 @@ function processTranscript(speaker, text) {
         
         let data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
         
-        // 1. Logic Highlight từ khóa (Màu vàng dạ quang)
         let highlightedText = text;
         if (data.keywords && data.keywords.length > 0) {
             data.keywords.forEach(kw => {
-                if (kw.length > 1) { // Bỏ qua mấy chữ lặt vặt 1 ký tự
+                if (kw.length > 1) {
                     try {
                         const reg = new RegExp(`\\b(${kw})\\b`, 'gi');
                         highlightedText = highlightedText.replace(reg, `<span style="color: #fbbc04; font-weight: bold; background: rgba(251,188,4,0.15); padding: 0 2px; border-radius: 2px;">$1</span>`);
@@ -163,9 +144,7 @@ function processTranscript(speaker, text) {
             });
         }
 
-        // 2. Logic Ẩn/Hiện thanh phần trăm thông minh
         let percentageHtml = "";
-        // Chỉ vẽ thanh phần trăm khi AI thực sự trả về một con số
         if (data.agree_percent !== null && data.agree_percent !== undefined) {
             percentageHtml = `
                 <div style="margin-top: 8px; display: flex; gap: 5px;">
@@ -175,7 +154,6 @@ function processTranscript(speaker, text) {
             `;
         }
 
-        // 3. Gom HTML lại và in ra màn hình
         const html = `
             <div style="border-bottom: 1px solid #5f6368; padding-bottom: 10px; margin-bottom: 10px;">
                 <div style="font-weight: bold; color: #e8eaed;">👤 ${speaker}</div>
