@@ -10,20 +10,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function callGeminiAPI(text) {
-  // Đã trả về nguyên bản gemini-2.5-flash!
+  // Using Gemini 2.5 Flash model!
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   
   const systemPrompt = `
-    Phân tích ý nghĩa và sắc thái của câu nói sau trong môi trường công sở: "${text}"
-    TRẢ VỀ ĐÚNG JSON (Không giải thích thêm):
-    {
-      "meaning": "Dịch ý thật sự một cách thẳng thắn",
-      "nuance": "Sắc thái (ví dụ: trực tiếp, nhiệt tình, từ chối khéo, chào hỏi...)",
-      "agree_percent": <Chỉ nhập 1 số nguyên từ 0 đến 100 NẾU câu nói thể hiện sự đồng tình, phản đối, hoặc do dự. NẾU LÀ CÂU CHÀO HỎI, THÔNG BÁO HOẶC CÂU HỎI BÌNH THƯỜNG, HÃY TRẢ VỀ null>,
-      "keywords": [], // BẮT BUỘC: Lấy y nguyên 1 đến 3 từ TIẾNG ANH trong câu gốc ("${text}") thể hiện rõ nhất thái độ/sắc thái. TUYỆT ĐỐI KHÔNG DỊCH SANG TIẾNG VIỆT. Nếu không có từ nào đặc biệt thì để mảng rỗng [].
-      "suggested_reply": "Viết hẳn 1 câu tiếng Anh (kèm dịch tiếng Việt) để người dùng đáp lại."
-    }
-  `;
+  Analyze the meaning and nuance of the following sentence in a professional environment: "${text}"
+  RETURN ONLY JSON (No explanations):
+{
+    "meaning": "Directly translate the true intent.",
+    "nuance": "Nuance (e.g., direct, enthusiastic, hesitant, polite refusal, greeting...)",
+    "agree_percent": <Input an integer from 0 to 100 if the sentence shows agreement, disagreement, or hesitation. If it is a greeting, announcement, or normal question, return null>,
+    "keywords": [], // REQUIRED: Extract 1 to 3 keywords in ENGLISH from the original ("${text}") that best represent the attitude/nuance. DO NOT translate to Vietnamese. If no specific keywords exist, leave as an empty array [].
+    "suggested_reply": "Write 1 suggested reply in English (with Vietnamese translation) for the user to respond."
+}
+`;
 
   try {
     const response = await fetch(url, {
@@ -36,8 +36,8 @@ async function callGeminiAPI(text) {
     });
 
     const data = await response.json();
-    if (data.error) return { error: "API Lỗi: " + data.error.message };
-    if (!data.candidates) return { error: "AI không trả về kết quả." };
+    if (data.error) return { error: "API Error: " + data.error.message };
+    if (!data.candidates) return { error: "AI returned no results." };
 
     let aiText = data.candidates[0].content.parts[0].text;
     aiText = aiText.replace(/```json|```/g, "").trim(); 
@@ -54,6 +54,6 @@ async function callGeminiAPI(text) {
     return result; 
 
   } catch (error) {
-    return { error: "Lỗi mạng hoặc hệ thống: " + error.message };
+    return { error: "Network or system error: " + error.message };
   }
 }

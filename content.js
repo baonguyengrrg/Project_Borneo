@@ -1,16 +1,16 @@
-// 1. Khởi tạo UI Dashboard
+// 1. Initialize UI Dashboard
 const dashboard = document.createElement('div');
 dashboard.id = 'nuance-dashboard';
 dashboard.innerHTML = `
   <div id="nuance-header" style="padding: 12px; background-color: #3c4043; border-radius: 12px 12px 0 0; cursor: grab; font-weight: bold; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
     <span>🌐 Nuance Decoder</span>
     <div style="display: flex; gap: 10px; align-items: center;">
-        <span id="nuance-toggle-btn" style="cursor: pointer; font-size: 12px; background: #ea4335; padding: 3px 8px; border-radius: 4px;">Tạm Dừng</span>
+        <span id="nuance-toggle-btn" style="cursor: pointer; font-size: 12px; background: #ea4335; padding: 3px 8px; border-radius: 4px;">Pause</span>
         <span style="font-size: 10px; color: #8ab4f8; font-weight: bold;">LIVE</span>
     </div>
   </div>
   <div id="nuance-status" style="padding: 10px 15px; border-bottom: 1px solid #5f6368; font-size: 13px; color: #9aa0a6; background-color: rgba(32, 33, 36, 0.95); flex-shrink: 0;">
-    <i>Đang chờ phụ đề...</i>
+    <i>Waiting for subtitles...</i>
   </div>
   <div id="nuance-content" style="padding: 15px; font-size: 14px; line-height: 1.5; flex-grow: 1; overflow-y: auto; background-color: rgba(32, 33, 36, 0.95);">
   </div>
@@ -27,9 +27,9 @@ dashboard.style.cssText = `
 `;
 document.body.appendChild(dashboard);
 
-// 2. Logic Nút Bật/Tắt & Kéo thả
+// 2. Toggle Button & Drag Logic
 let isPaused = false; 
-let isCoolingDown = false; // Phanh bảo vệ API
+let isCoolingDown = false; // API rate limit protection
 const toggleBtn = document.getElementById('nuance-toggle-btn');
 const contentArea = document.getElementById('nuance-content');
 const statusArea = document.getElementById('nuance-status');
@@ -37,15 +37,15 @@ const statusArea = document.getElementById('nuance-status');
 toggleBtn.addEventListener('click', () => {
     isPaused = !isPaused; 
     if (isPaused) {
-        toggleBtn.innerText = "Bật Lại";
+        toggleBtn.innerText = "Resume";
         toggleBtn.style.background = "#1e8e3e"; 
         contentArea.style.display = "none"; 
-        statusArea.innerHTML = "<i>Đã tạm dừng phân tích...</i>";
+        statusArea.innerHTML = "<i>Analysis paused...</i>";
     } else {
-        toggleBtn.innerText = "Tạm Dừng";
+        toggleBtn.innerText = "Pause";
         toggleBtn.style.background = "#ea4335"; 
         contentArea.style.display = "block"; 
-        statusArea.innerHTML = "<i>Đang chờ phụ đề...</i>";
+        statusArea.innerHTML = "<i>Waiting for subtitles...</i>";
     }
 });
 
@@ -56,7 +56,7 @@ document.addEventListener('mousemove', (e) => { if (isDragging) { e.preventDefau
 document.addEventListener('mouseup', () => isDragging = false);
 
 
-// 3. Logic Đọc Caption Real-time
+// 3. Real-time Caption Reading Logic
 let lastSentToAI = "";
 let currentTextOnUI = ""; 
 let typingTimer;
@@ -87,22 +87,22 @@ const observer = new MutationObserver((mutations) => {
         if (statusEl) {
             statusEl.style.whiteSpace = "normal"; 
             statusEl.style.lineHeight = "1.4";
-            statusEl.innerHTML = `🎙️ <span style="color: #8ab4f8;"><b>${speakerName}</b> đang nói: <br><i style="color: #ffffff; font-size: 13px;">"${latestSpeech}"</i></span>`;
+            statusEl.innerHTML = `🎙️ <span style="color: #8ab4f8;"><b>${speakerName}</b> is speaking: <br><i style="color: #ffffff; font-size: 13px;">"${latestSpeech}"</i></span>`;
         }
 
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
             if (latestSpeech.length > 5 && latestSpeech !== lastSentToAI) {
-                // CHẶN GỬI NẾU ĐANG HỒI CHIÊU
+                // BLOCK SENDING IF ON COOLDOWN
                 if (isCoolingDown) {
-                    if (statusEl) statusEl.innerHTML = `⏳ <span style="color: #ea4335;">Nghỉ 15s tránh nghẽn API (Anti-Spam)...</span>`;
+                    if (statusEl) statusEl.innerHTML = `⏳ <span style="color: #ea4335;">15s cooldown to prevent API spam...</span>`;
                     return;
                 }
 
                 processTranscript(speakerName, latestSpeech);
                 lastSentToAI = latestSpeech;
                 
-                // Bật phanh 15s
+                // Enable 15s cooldown
                 isCoolingDown = true;
                 setTimeout(() => { isCoolingDown = false; }, 15000);
             }
@@ -113,20 +113,20 @@ const observer = new MutationObserver((mutations) => {
 setTimeout(() => { observer.observe(document.body, { childList: true, subtree: true, characterData: true }); }, 5000);
 
 
-// 4. Gửi Background & Render Kết Quả
+// 4. Send to Background & Render Results
 function processTranscript(speaker, text) {
     const statusEl = document.getElementById('nuance-status');
-    if (statusEl) statusEl.innerHTML = `🧠 <span style="color: #fbbc04;">Đang phân tích ý của <b>${speaker}</b>...</span>`;
+    if (statusEl) statusEl.innerHTML = `🧠 <span style="color: #fbbc04;">Analyzing meaning of <b>${speaker}</b>...</span>`;
     
     chrome.runtime.sendMessage({ action: "ANALYZE_TEXT", text: text }, (response) => {
-        // Reset trạng thái sau khi phân tích xong
-        if (statusEl && !isCoolingDown) statusEl.innerHTML = `✅ <span style="color: #81c995;">Xong! Đang chờ câu tiếp theo...</span>`;
+        // Reset state after analysis is complete
+        if (statusEl && !isCoolingDown) statusEl.innerHTML = `✅ <span style="color: #81c995;">Done! Waiting for the next sentence...</span>`;
 
         if (!response || !response.data) return;
         const contentDiv = document.getElementById('nuance-content');
 
         if (response.data.error) {
-            contentDiv.innerHTML = `<div style="color: #ea4335; margin-bottom: 10px;">❌ Lỗi: ${response.data.error}</div>` + contentDiv.innerHTML;
+            contentDiv.innerHTML = `<div style="color: #ea4335; margin-bottom: 10px;">❌ Error: ${response.data.error}</div>` + contentDiv.innerHTML;
             return;
         }
         
@@ -148,8 +148,8 @@ function processTranscript(speaker, text) {
         if (data.agree_percent !== null && data.agree_percent !== undefined) {
             percentageHtml = `
                 <div style="margin-top: 8px; display: flex; gap: 5px;">
-                    <span style="background: #1e8e3e; font-size: 11px; padding: 3px 6px; border-radius: 3px;">Đồng ý: ${data.agree_percent}%</span>
-                    <span style="background: #f29900; font-size: 11px; padding: 3px 6px; border-radius: 3px; color: #202124;">Băn khoăn: ${data.hesitate_percent}%</span>
+                    <span style="background: #1e8e3e; font-size: 11px; padding: 3px 6px; border-radius: 3px;">Agree: ${data.agree_percent}%</span>
+                    <span style="background: #f29900; font-size: 11px; padding: 3px 6px; border-radius: 3px; color: #202124;">Hesitant: ${data.hesitate_percent}%</span>
                 </div>
             `;
         }
@@ -159,12 +159,12 @@ function processTranscript(speaker, text) {
                 <div style="font-weight: bold; color: #e8eaed;">👤 ${speaker}</div>
                 <div style="font-size: 13px; color: #9aa0a6; font-style: italic; margin-bottom: 5px;">"${highlightedText}"</div>
                 
-                <div style="margin-bottom: 3px;"><strong>Sắc thái:</strong> <span style="color: #fce8b2;">${data.nuance || "Bình thường"}</span></div>
-                <div><strong>Dịch ý:</strong> <span style="color: #81c995;">${data.meaning || ""}</span></div>
+                <div style="margin-bottom: 3px;"><strong>Nuance:</strong> <span style="color: #fce8b2;">${data.nuance || "Normal"}</span></div>
+                <div><strong>Meaning:</strong> <span style="color: #81c995;">${data.meaning || ""}</span></div>
                 
                 <div style="margin-top: 8px; padding: 8px; background: rgba(30,142,62,0.15); border-left: 3px solid #81c995; border-radius: 4px;">
-                    <span style="font-size: 11px; font-weight: bold; color: #81c995;">💬 GỢI Ý ĐÁP LẠI:</span>
-                    <div style="font-size: 13px; color: #fff; margin-top: 3px;">${data.suggested_reply || "Tiếp tục lắng nghe..."}</div>
+                    <span style="font-size: 11px; font-weight: bold; color: #81c995;">💬 SUGGESTED REPLY:</span>
+                    <div style="font-size: 13px; color: #fff; margin-top: 3px;">${data.suggested_reply || "Continue listening..."}</div>
                 </div>
                 
                 ${percentageHtml}
