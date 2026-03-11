@@ -3,7 +3,7 @@ const dashboard = document.createElement('div');
 dashboard.id = 'nuance-dashboard';
 dashboard.innerHTML = `
   <div id="nuance-header" style="padding: 12px; background-color: #3c4043; border-radius: 12px 12px 0 0; cursor: grab; font-weight: bold; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-    <span>🌐 Nuance Decoder</span>
+    <span>  Nuance Decoder</span>
     <div style="display: flex; gap: 10px; align-items: center;">
         <span id="nuance-toggle-btn" style="cursor: pointer; font-size: 12px; background: #ea4335; padding: 3px 8px; border-radius: 4px;">Pause</span>
         <span style="font-size: 10px; color: #8ab4f8; font-weight: bold;">LIVE</span>
@@ -21,7 +21,7 @@ dashboard.style.cssText = `
   width: 340px; height: 450px; 
   min-width: 250px; min-height: 200px; 
   color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 999999; 
-  font-family: 'Segoe UI', Tahoma, sans-serif; border: 1px solid #5f6368; 
+  font-family: 'Georgia', 'Times New Roman', serif; border: 1px solid #5f6368; 
   display: flex; flex-direction: column; border-radius: 12px;
   resize: both; overflow: hidden; 
 `;
@@ -87,7 +87,7 @@ const observer = new MutationObserver((mutations) => {
         if (statusEl) {
             statusEl.style.whiteSpace = "normal"; 
             statusEl.style.lineHeight = "1.4";
-            statusEl.innerHTML = `🎙️ <span style="color: #8ab4f8;"><b>${speakerName}</b> is speaking: <br><i style="color: #ffffff; font-size: 13px;">"${latestSpeech}"</i></span>`;
+            statusEl.innerHTML = ` <span style="color: #8ab4f8;"><b>${speakerName}</b> is speaking: <br><i style="color: #ffffff; font-size: 13px;">"${latestSpeech}"</i></span>`;
         }
 
         clearTimeout(typingTimer);
@@ -95,7 +95,7 @@ const observer = new MutationObserver((mutations) => {
             if (latestSpeech.length > 5 && latestSpeech !== lastSentToAI) {
                 // BLOCK SENDING IF ON COOLDOWN
                 if (isCoolingDown) {
-                    if (statusEl) statusEl.innerHTML = `⏳ <span style="color: #ea4335;">15s cooldown to prevent API spam...</span>`;
+                    if (statusEl) statusEl.innerHTML = ` <span style="color: #ea4335;">15s cooldown to prevent API spam...</span>`;
                     return;
                 }
 
@@ -116,17 +116,17 @@ setTimeout(() => { observer.observe(document.body, { childList: true, subtree: t
 // 4. Send to Background & Render Results
 function processTranscript(speaker, text) {
     const statusEl = document.getElementById('nuance-status');
-    if (statusEl) statusEl.innerHTML = `🧠 <span style="color: #fbbc04;">Analyzing meaning of <b>${speaker}</b>...</span>`;
+    if (statusEl) statusEl.innerHTML = ` <span style="color: #fbbc04;">Analyzing meaning of <b>${speaker}</b>...</span>`;
     
     chrome.runtime.sendMessage({ action: "ANALYZE_TEXT", text: text }, (response) => {
         // Reset state after analysis is complete
-        if (statusEl && !isCoolingDown) statusEl.innerHTML = `✅ <span style="color: #81c995;">Done! Waiting for the next sentence...</span>`;
+        if (statusEl && !isCoolingDown) statusEl.innerHTML = `<span style="color: #81c995;">Done! Waiting for the next sentence...</span>`;
 
         if (!response || !response.data) return;
         const contentDiv = document.getElementById('nuance-content');
 
         if (response.data.error) {
-            contentDiv.innerHTML = `<div style="color: #ea4335; margin-bottom: 10px;">❌ Error: ${response.data.error}</div>` + contentDiv.innerHTML;
+            contentDiv.innerHTML = `<div style="color: #ea4335; margin-bottom: 10px;"> Error: ${response.data.error}</div>` + contentDiv.innerHTML;
             return;
         }
         
@@ -156,14 +156,14 @@ function processTranscript(speaker, text) {
 
         const html = `
             <div style="border-bottom: 1px solid #5f6368; padding-bottom: 10px; margin-bottom: 10px;">
-                <div style="font-weight: bold; color: #e8eaed;">👤 ${speaker}</div>
+                <div style="font-weight: bold; color: #e8eaed;"> ${speaker}</div>
                 <div style="font-size: 13px; color: #9aa0a6; font-style: italic; margin-bottom: 5px;">"${highlightedText}"</div>
                 
                 <div style="margin-bottom: 3px;"><strong>Nuance:</strong> <span style="color: #fce8b2;">${data.nuance || "Normal"}</span></div>
                 <div><strong>Meaning:</strong> <span style="color: #81c995;">${data.meaning || ""}</span></div>
                 
                 <div style="margin-top: 8px; padding: 8px; background: rgba(30,142,62,0.15); border-left: 3px solid #81c995; border-radius: 4px;">
-                    <span style="font-size: 11px; font-weight: bold; color: #81c995;">💬 SUGGESTED REPLY:</span>
+                    <span style="font-size: 11px; font-weight: bold; color: #81c995;"> SUGGESTED REPLY:</span>
                     <div style="font-size: 13px; color: #fff; margin-top: 3px;">${data.suggested_reply || "Continue listening..."}</div>
                 </div>
                 

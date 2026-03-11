@@ -21,7 +21,7 @@ async function callGeminiAPI(text) {
     "nuance": "Nuance (e.g., direct, enthusiastic, hesitant, polite refusal, greeting...)",
     "agree_percent": <Input an integer from 0 to 100 if the sentence shows agreement, disagreement, or hesitation. If it is a greeting, announcement, or normal question, return null>,
     "keywords": [], // REQUIRED: Extract 1 to 3 keywords in ENGLISH from the original ("${text}") that best represent the attitude/nuance. DO NOT translate to Vietnamese. If no specific keywords exist, leave as an empty array [].
-    "suggested_reply": "Write 1 suggested reply in English (with Vietnamese translation) for the user to respond."
+    "suggested_reply": "Write 1 suggested reply in English for the user to respond."
 }
 `;
 
