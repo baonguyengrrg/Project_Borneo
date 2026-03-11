@@ -1,6 +1,6 @@
-# ASEAN Nuance Decoder (Hackathon Edition) 🌏🚀
+# NodSense (Hackathon Edition) 🌏🚀
 
-**ASEAN Nuance Decoder** is a Chrome Extension developed to break down cultural misunderstandings and language nuances in professional environments, specifically tailored for **Google Meet**.
+**NodSense** is a Chrome Extension developed to break down cultural misunderstandings and language nuances in professional environments, specifically tailored for **Google Meet**.
 
 This project focuses on decoding "hidden meanings" and providing the true intent behind statements, helping users communicate more effectively and confidently in cross-cultural settings.
 

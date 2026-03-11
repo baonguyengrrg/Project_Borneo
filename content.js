@@ -3,7 +3,7 @@ const dashboard = document.createElement('div');
 dashboard.id = 'nuance-dashboard';
 dashboard.innerHTML = `
   <div id="nuance-header" style="padding: 12px; background-color: #3c4043; border-radius: 12px 12px 0 0; cursor: grab; font-weight: bold; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-    <span>  Nuance Decoder</span>
+    <span>  NodSense</span>
     <div style="display: flex; gap: 10px; align-items: center;">
         <span id="nuance-toggle-btn" style="cursor: pointer; font-size: 12px; background: #ea4335; padding: 3px 8px; border-radius: 4px;">Pause</span>
         <span style="font-size: 10px; color: #8ab4f8; font-weight: bold;">LIVE</span>
