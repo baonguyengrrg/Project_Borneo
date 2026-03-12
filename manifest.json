@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "ASEAN Nuance Decoder (Hackathon)",
+  "name": "NodSense (Hackathon)",
   "version": "1.0",
   "description": "Real-time cultural nuance translation for Google Meet.",
   "permissions": [
