@@ -50,3 +50,5 @@ This project focuses on decoding "hidden meanings" and providing the true intent
 
 ---
 *Built to bridge the digital and cultural gap through AI.*
+## Link to Video
+[Link to our video](https://drive.google.com/file/d/1pXFVkIrz9jctd8IVT8n3UayBZLg8Mx71/view?fbclid=IwY2xjawQhEjpleHRuA2FlbQIxMABicmlkETFXTXR4ejNGQ1NXZm5yNFpLc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHlnw5FGUX8pWVWYAt5mZa4Yb_fh0vPwP5PRl9X7xR22vHGmHRHYK3vg4VuDr_aem_RG5aFqskGwrA3dAuyjfSUA)
