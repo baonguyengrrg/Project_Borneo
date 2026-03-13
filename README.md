@@ -51,4 +51,4 @@ This project focuses on decoding "hidden meanings" and providing the true intent
 ---
 *Built to bridge the digital and cultural gap through AI.*
 ## Link to Video
-[Link to our video]([https://drive.google.com/file/d/1pXFVkIrz9jctd8IVT8n3UayBZLg8Mx71/view?fbclid=IwY2xjawQhEjpleHRuA2FlbQIxMABicmlkETFXTXR4ejNGQ1NXZm5yNFpLc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHlnw5FGUX8pWVWYAt5mZa4Yb_fh0vPwP5PRl9X7xR22vHGmHRHYK3vg4VuDr_aem_RG5aFqskGwrA3dAuyjfSUA](https://drive.google.com/file/d/1POhjmwQJ6Wm4VzhVpYNf5DVvOIc83v2q/view?fbclid=IwY2xjawQhEpVleHRuA2FlbQIxMABicmlkETFUdk15WWI5VXF5MEwwSGI3c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHu9yW-_yNRyS6oF1PjqiZLsYvwJBmb2kggbLI_xdVvDpNrSbM8DDyLZG8cPl_aem_aUVA9s80R-rHqy2N2I_CJA))
+[Link to our video]((https://drive.google.com/file/d/1POhjmwQJ6Wm4VzhVpYNf5DVvOIc83v2q/view?fbclid=IwY2xjawQhEpVleHRuA2FlbQIxMABicmlkETFUdk15WWI5VXF5MEwwSGI3c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHu9yW-_yNRyS6oF1PjqiZLsYvwJBmb2kggbLI_xdVvDpNrSbM8DDyLZG8cPl_aem_aUVA9s80R-rHqy2N2I_CJA))
